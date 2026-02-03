@@ -5,7 +5,6 @@
 int main() {
 	printf("int의 최소값 : %d\n", INT_MIN);
 	printf("int의 최대값 : %d\n", INT_MAX);
-	printf("llong의 최대값 : %d\n", LLONG_MAX);
 
 	printf("%d\n", 12);		// 10진수 12
 	printf("%d\n", 014);	// 8진수(숫자앞에 0) 12
