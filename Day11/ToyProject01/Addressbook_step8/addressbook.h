@@ -3,15 +3,10 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-#pragma region 전처리 영역
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#pragma endregion
-
-#pragma region 매크로 선언 영역
 
 // 사람은 숫자보다 이름에 익숙. 유지보수를 위해서
 #define MAX_CONTACTS  100    // 100명 주소록
@@ -22,8 +17,6 @@
 #define ADDR_LEN	  121
 #define MEMO_LEN	   31
 
-#pragma endregion
-
 typedef struct _contact {
 	char name[NAME_LEN];
 	char phone[PHONE_LEN];
@@ -32,11 +25,7 @@ typedef struct _contact {
 	char memo[MEMO_LEN];
 } Contact;   // 이후 Contact 이름으로 사용
 
-#endif
-
-
 // 외부 main.c에서 호출할 함수리스트
-#pragma region 함수선언 영역
 
 // 함수 선언
 // step1
@@ -57,10 +46,10 @@ int save_contacts(const char* filename);  // 파일명이 변경되면 안됨
 int load_contacts(const char* filename);
 
 // step6
-void sort_by_name(void);  // 이름순 정렬   qsort() 함수 사용, stdlib.h.dp 포함
+void sort_by_name(void);  // 이름순 정렬  qsort() 함수 사용, stdlib.h에 포함
 
 // step 7
 int ab_init(void);   // 주소록 초기화
 void ab_free(void);  // 주소록 메모리 해제
 
-#pragma endregion
+#endif

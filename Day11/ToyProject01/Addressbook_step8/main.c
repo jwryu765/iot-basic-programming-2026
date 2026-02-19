@@ -1,4 +1,4 @@
-﻿// 주소록 프로그램 step 8
+﻿// 주소록 프로그램 step 8﻿
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdlib.h>
@@ -26,7 +26,7 @@ int main(void) {
 
 	load_contacts("contacts.txt"); // 프로그램 실행 후 데이터 로드!
 
-	while (1) { // 무한루프 : 
+	while (1) { // 무한루프 :
 		clear_screen();
 		print_menu(); // 메뉴를 출력
 		choice = read_menu(); // choice 값에 입력 받음
@@ -63,20 +63,20 @@ int main(void) {
 
 		case 7:
 			save_contacts("contacts.txt");  // 종료직전 현재 데이터 저장
-			ab_free();   // 반드시 메로리 해제
+			ab_free();  // 반드시 메모리 해제
 			puts("프로그램 종료");
 			return 0;
 
-		/*case 7: // 신규 추가 저장기능
-			//save_contacts("contacts.txt");
-			break;
+			/*case 7: // 신규 추가 저장기능
+				//save_contacts("contacts.txt");
+				break;
 
-		case 8: // 데이터 불러오기
-			//load_contacts("contacts.txt");
-			break;*/
+			case 8: // 데이터 불러오기
+				//load_contacts("contacts.txt");
+				break;*/
 
 		default:
-			puts("메뉴는 1~7사이 입니다.");
+			puts("메뉴는 1~7 사이 입니다.");
 			break;
 		}
 
