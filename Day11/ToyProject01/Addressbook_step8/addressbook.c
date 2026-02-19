@@ -164,7 +164,6 @@ void add_contact(void) {
 
 	printf("메모[최대10자] : ");
 	read_line(contacts[count].memo, MEMO_LEN);
-		puts("'|' 문자는 사용할 수 없습니다. 다시 추가하세요");
 	if (contains_pipe(contacts[count].memo)) { // 메모에 파이프가 들어가면 
 		puts("'|' 문자는 사용할 수 없습니다. 다시 추가하세요.");
 		return;   // 함수 종료.
