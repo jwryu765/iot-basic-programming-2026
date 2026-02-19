@@ -1,4 +1,4 @@
-﻿// 주소록 프로그램 step4
+﻿// 주소록 프로그램 step 5
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -54,12 +54,18 @@ static void print_contact(int);
 static void update_contact(void);
 static void delete_contact(void);
 
+static int save_contacts(const char* filename);  // 파일명이 변경되면 안됨
+static int load_contacts(const char* filename);
+static void trim_newline(char* s);   // 줄바꿈 제거기능 추가
+
 #pragma endregion
 
 #pragma region 메인함수 영역
 
 int main(void) {
 	int choice = 0;
+
+	load_contacts("contacts.txt"); // 프로그램 실행 후 데이터 로드!
 
 	while (1) { // 무한루프 : 
 		print_menu(); // 메뉴를 출력
@@ -92,8 +98,17 @@ int main(void) {
 			break;
 
 		case 6:
+			save_contacts("contacts.txt");  // 종료직전 현재 데이터 저장
 			puts("프로그램 종료");
 			return 0;
+
+		case 7: // 신규 추가 저장기능
+			//save_contacts("contacts.txt");
+			break;
+
+		case 8: // 데이터 불러오기
+			//load_contacts("contacts.txt");
+			break;
 
 		default:
 			puts("메뉴는 1~6사이 입니다.");
@@ -113,7 +128,7 @@ int main(void) {
 // 메뉴출력 함수
 static void print_menu(void) {
 	puts("========================================");
-	puts("          주소록 프로그램 (Step 4)      ");
+	puts("          주소록 프로그램 (Step 5)      ");
 	puts("========================================");
 	puts("1. 추가");
 	puts("2. 목록");
@@ -121,6 +136,8 @@ static void print_menu(void) {
 	puts("4. 수정");
 	puts("5. 삭제");
 	puts("6. 종료");
+	//puts("7. 저장");	// 데이터 저장
+	//puts("8. 로드");	// 데이터 로드
 	puts("----------------------------------------");
 }
 
@@ -150,6 +167,11 @@ static void read_line(char* buf, int size) {
 	// ex) buf = "Hello World!\n" -> "Hello World!\0"
 	// buf[12] = '\0'
 	buf[strcspn(buf, "\n")] = '\0';   // 문자열 끝 \n을 \0으로 변경
+}
+
+// 문자열 마지막에 엔터가 있으면 제거하는 함수
+static void trim_newline(char* s) {
+	s[strcspn(s, "\n")] = '\0';
 }
 
 // 메뉴 1. 연락처 추가
@@ -362,6 +384,90 @@ static void delete_contact(void) {
 	count--; // 한건 지웠으니 전체수를 1 감소
 
 	puts("삭제 완료!");
+}
+
+// 메뉴 7. 저장함수
+static int save_contacts(const char* filename) {
+	FILE* fp = fopen(filename, "w");  // 쓰기모드로 오픈
+	int i;
+
+	if (!fp) { // fp == NULL 이면
+		puts("파일 저장실패!(경로나 권한 확인요)");
+		return 0;
+	}
+
+	// 저장 작업
+	for (i = 0; i < count; i++) {
+		// 구분자 | 사용. |(파이프)를 주소록에 사용하면 문제발생!
+		fprintf(fp, "%s|%s|%s|%s|%s\n",
+			contacts[i].name,
+			contacts[i].phone,
+			contacts[i].address,
+			contacts[i].email,
+			contacts[i].memo
+			);
+	}
+
+	fclose(fp);
+	puts("저장 완료!");
+	return 1;  // 한건 성공
+}
+
+// 메뉴 8. 로드함수
+static int load_contacts(const char* filename) {
+	FILE* fp = fopen(filename, "r");
+	char line[600];
+
+	if (!fp) {
+		puts("불러올 파일이 없습니다.");
+		return 0;
+	}
+
+	count = 0;
+
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		char* name;
+		char* phone;
+		char* address;
+		char* email;
+		char* memo;
+
+		trim_newline(line);   // 메모이후 \n을 삭제
+
+		// |로 분리, 토큰 분리
+		name = strtok(line, "|");
+		phone = strtok(NULL, "|");
+		address = strtok(NULL, "|");
+		email = strtok(NULL, "|");
+		memo = strtok(NULL, "|");
+
+		// contacts 배열에 하나씩 대입
+		// 다섯개 데이터중 하나라도 없으면 패스
+		if (!name || !phone || !email || !memo || !address) continue;
+
+		if (count >= MAX_CONTACTS) break; // 현재 100개 밖에 못넣음
+
+		strncpy(contacts[count].name, name, NAME_LEN);
+		contacts[count].name[NAME_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].phone, phone, PHONE_LEN);
+		contacts[count].phone[PHONE_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].address, address, ADDR_LEN);
+		contacts[count].address[ADDR_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].email, email, EMAIL_LEN);
+		contacts[count].email[EMAIL_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].memo, memo, MEMO_LEN);
+		contacts[count].memo[MEMO_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		count++;
+	}
+
+	fclose(fp);
+	puts("불러오기 완료!");
+	return 1;
 }
 
 #pragma endregion

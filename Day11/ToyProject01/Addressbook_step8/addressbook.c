@@ -1,127 +1,79 @@
-﻿// 주소록 프로그램 step4
-
 #define _CRT_SECURE_NO_WARNINGS
-
-#pragma region 전처리 영역
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#pragma endregion
-
-#pragma region 매크로 선언 영역
-
-// 사람은 숫자보다 이름에 익숙. 유지보수를 위해서
-#define MAX_CONTACTS  100    // 100명 주소록
-#define NAME_LEN	   31	 // 이름 최대길이
-#define PHONE_LEN      21
-#define EMAIL_LEN      65
-#define ADDR_LEN	  121
-#define MEMO_LEN	   31
-
-#pragma endregion
-
-typedef struct _contact {
-	char name[NAME_LEN];
-	char phone[PHONE_LEN];
-	char address[ADDR_LEN];
-	char email[EMAIL_LEN];
-	char memo[MEMO_LEN];
-} Contact;   // 이후 Contact 이름으로 사용
+#include "addressbook.h"
 
 #pragma region 변수 영역
 
 // 변수 선언
-static Contact contacts[MAX_CONTACTS];
+// static Contact contacts[MAX_CONTACTS];   // 배열에서....
+static Contact* contacts = NULL;    // 동적배열로...
 static int count = 0;
+static int capacity = 0;
 
 #pragma endregion 
 
-#pragma region 함수선언 영역
+#pragma region 내부함수선언
 
-// 함수 선언
-static void print_menu(void);   // 이 소스내에서만 쓰겠다
-static int read_menu(void);
 static void read_line(char* buf, int size);
-
-static void add_contact(void);
-static void list_contacts(void);
-
-static void search_contact(void);
 static void print_contact(int);
-
-static void update_contact(void);
-static void delete_contact(void);
-
-#pragma endregion
-
-#pragma region 메인함수 영역
-
-int main(void) {
-	int choice = 0;
-
-	while (1) { // 무한루프 : 
-		print_menu(); // 메뉴를 출력
-		choice = read_menu(); // choice 값에 입력 받음
-
-		switch (choice) {
-		case 1:
-			//printf("%s\n", "[ADD] 연락처 추가 (기능 구현요)");
-			add_contact();  // 실제 연락처 추가 
-			break;
-
-		case 2:
-			//puts("[LIST] 연락처 목록");
-			list_contacts();
-			break;
-
-		case 3:
-			//puts("[SEARCH] 연락처 검색 (다음 스텝에서)");
-			search_contact();
-			break;
-
-		case 4:
-			//puts("[EDIT] 연락처 수정 (다음 스텝에서)");
-			update_contact();
-			break;
-
-		case 5:
-			//puts("[DELETE] 연락처 삭제 (다음 스텝에서)");
-			delete_contact();
-			break;
-
-		case 6:
-			puts("프로그램 종료");
-			return 0;
-
-		default:
-			puts("메뉴는 1~6사이 입니다.");
-			break;
-		}
-
-		puts("");
-	}
-
-	return 0;
-}
-
-#pragma endregion
+static void trim_newline(char* s);   // 줄바꿈 제거기능 추가
+static int contains_pipe(const char* s);    // 입력 문자열중에 | 존재 확인
+static int find_by_phone(const char* phone);    // 같은 전화번호 중복체크
+// 매개변수는 void포인터
+static int cmp_contact_name(const void* a, const void* b);
+static int ab_ensure_capacity(int need);   // 용량 추가여부 확인
 
 #pragma region 사용자함수 정의 영역
 
 // 메뉴출력 함수
-static void print_menu(void) {
+void print_menu(void) {
 	puts("========================================");
-	puts("          주소록 프로그램 (Step 4)      ");
+	puts("          주소록 프로그램 (Step 8)      ");
 	puts("========================================");
 	puts("1. 추가");
 	puts("2. 목록");
 	puts("3. 검색");
 	puts("4. 수정");
 	puts("5. 삭제");
-	puts("6. 종료");
+	puts("6. 정렬");
+	puts("7. 종료");
+	//puts("7. 저장");	// 데이터 저장
+	//puts("8. 로드");	// 데이터 로드
 	puts("----------------------------------------");
+}
+
+static int contains_pipe(const char* s) {
+	return (strchr(s, '|') != NULL);
+}
+
+// 전화번로 중복체크 함수
+static int find_by_phone(const char* phone) {
+	int i;
+
+	for (i = 0; i < count; i++) {
+		if (strcmp(contacts[i].phone, phone) == 0) {
+			return i;  // 현재 인덱스값이 폰번호가 같다.
+		}
+	}
+	return -1;    // 일치하는 게 없음
+}
+
+static int cmp_contact_name(const void* a, const void* b) {
+	const Contact* ca = (const Contact*)a;
+	const Contact* cb = (const Contact*)b;
+
+	return strcmp(ca->name, (*cb).name);    // 1, 0, -1
+}
+
+// 퀴소트로 이름순 정렬
+void sort_by_name(void) {
+	if (count <= 1) {
+		puts("정렬 불필요!");
+		return;
+	}
+
+	// 퀵소트
+	qsort(contacts, count, sizeof(Contact), cmp_contact_name);
+	puts("이름순 정렬 완료!");
 }
 
 // 메뉴번호 읽기 함수
@@ -152,10 +104,20 @@ static void read_line(char* buf, int size) {
 	buf[strcspn(buf, "\n")] = '\0';   // 문자열 끝 \n을 \0으로 변경
 }
 
+// 문자열 마지막에 엔터가 있으면 제거하는 함수
+static void trim_newline(char* s) {
+	s[strcspn(s, "\n")] = '\0';
+}
+
 // 메뉴 1. 연락처 추가
 static void add_contact(void) {
-	if (count >= MAX_CONTACTS) {
-		puts("주소록 최대인원 100명에 도달했습니다.");
+	//if (count >= MAX_CONTACTS) {
+	//	puts("주소록 최대인원 100명에 도달했습니다.");
+	//	return;
+	//}
+
+	if (!ab_ensure_capacity(count + 1)) {
+		puts("메모리 추가 실패!");
 		return;
 	}
 
@@ -163,18 +125,44 @@ static void add_contact(void) {
 
 	printf("이름[최대10자] : ");
 	read_line(contacts[count].name, NAME_LEN);
+	if (contains_pipe(contacts[count].name)) { // 이름에 파이프가 들어가면
+		puts("'|' 문자는 사용할 수 없습니다. 다시 추가하세요");
+		return;   // 함수 종료.
+	}
 
 	printf("전화[최대20자] : ");
 	read_line(contacts[count].phone, PHONE_LEN);
 
+	if (strlen(contacts[count].phone) == 0) {
+		puts("전화번호는 필수입니다.");
+		return;
+	}
+
+	{ // 영역을 구분짓는 코드블럭
+		int dup = find_by_phone(contacts[count].phone);
+		if (dup != -1) {
+			printf("동일 전화번호 존재 (순번: %3d, 이름: %10s)\n", dup + 1, contacts[dup].name);
+			puts("추가 취소!");
+			return;
+		}
+	}
+
 	printf("주소[최대40자] : ");
 	read_line(contacts[count].address, ADDR_LEN);
+	if (contains_pipe(contacts[count].address)) { // 주소가 파이프가 들어가면
+		puts("'|' 문자는 사용할 수 없습니다. 다시 추가하세요");
+		return;   // 함수 종료.
+	}
 
 	printf("이메일 : ");
 	read_line(contacts[count].email, EMAIL_LEN);
 
 	printf("메모[최대10자] : ");
 	read_line(contacts[count].memo, MEMO_LEN);
+	if (contains_pipe(contacts[count].memo)) { // 메모에 파이프가 들어가면
+		puts("'|' 문자는 사용할 수 없습니다. 다시 추가하세요");
+		return;   // 함수 종료.
+	}
 
 	count++;
 	puts("추가 완료!");
@@ -364,4 +352,138 @@ static void delete_contact(void) {
 	puts("삭제 완료!");
 }
 
+// 메뉴 7. 저장함수
+static int save_contacts(const char* filename) {
+	FILE* fp = fopen(filename, "w");  // 쓰기모드로 오픈
+	int i;
+
+	if (!fp) { // fp == NULL 이면
+		puts("파일 저장실패!(경로나 권한 확인요)");
+		return 0;
+	}
+
+	// 저장 작업
+	for (i = 0; i < count; i++) {
+		// 구분자 | 사용. |(파이프)를 주소록에 사용하면 문제발생!
+		fprintf(fp, "%s|%s|%s|%s|%s\n",
+			contacts[i].name,
+			contacts[i].phone,
+			contacts[i].address,
+			contacts[i].email,
+			contacts[i].memo
+		);
+	}
+
+	fclose(fp);
+	puts("저장 완료!");
+	return 1;  // 한건 성공
+}
+
+// 메뉴 8. 로드함수
+static int load_contacts(const char* filename) {
+	FILE* fp = fopen(filename, "r");
+	char line[600];
+
+	if (!fp) {
+		puts("불러올 파일이 없습니다.");
+		return 0;
+	}
+
+	count = 0;
+
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		char* name;
+		char* phone;
+		char* address;
+		char* email;
+		char* memo;
+
+		trim_newline(line);   // 메모이후 \n을 삭제
+
+		// |로 분리, 토큰 분리
+		name = strtok(line, "|");
+		phone = strtok(NULL, "|");
+		address = strtok(NULL, "|");
+		email = strtok(NULL, "|");
+		memo = strtok(NULL, "|");
+
+		// contacts 배열에 하나씩 대입
+		// 다섯개 데이터중 하나라도 없으면 패스
+		if (!name || !phone || !email || !memo || !address) continue;
+
+		//if (count >= MAX_CONTACTS) break; // 현재 100개 밖에 못넣음
+		if (!ab_ensure_capacity(count + 1)) {
+			puts("불러오기 중 메모리 부족!");
+			break;
+		}
+
+		strncpy(contacts[count].name, name, NAME_LEN);
+		contacts[count].name[NAME_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].phone, phone, PHONE_LEN);
+		contacts[count].phone[PHONE_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].address, address, ADDR_LEN);
+		contacts[count].address[ADDR_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].email, email, EMAIL_LEN);
+		contacts[count].email[EMAIL_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		strncpy(contacts[count].memo, memo, MEMO_LEN);
+		contacts[count].memo[MEMO_LEN - 1] = '\0';  // 이름길이보다 길게 쓰면 정리
+
+		count++;
+	}
+
+	fclose(fp);
+	puts("불러오기 완료!");
+	return 1;
+}
+
+// 주소록 초기화
+static int ab_init(void) {
+	capacity = INIT_CAPACITY;
+	count = 0;
+	// 동적할당
+	contacts = (Contact*)malloc(sizeof(Contact) * capacity);  // Contact 구조체를 10개 만들고 시작!
+	if (!contacts) {
+		puts("메모리 할당 실패!!!");
+		return 0;
+	}
+	return 1;  // 성공
+}
+
+// 주소록 메모리 해제
+static void ab_free(void) {
+	free(contacts);
+	contacts = NULL;  // NULL로 할당. 환전제거
+	count = 0;
+	capacity = 0;
+}
+
+// 주소록 크기가 작으면 동적으로 늘리는 함수
+static int ab_ensure_capacity(int need) {
+	Contact* newbuf;
+	int newcap;
+
+	if (need <= capacity) return 1;
+
+	newcap = capacity;
+	while (newcap < need) {
+		// 2배 확장
+		newcap = newcap * 2;
+	}
+
+	newbuf = (Contact*)realloc(contacts, sizeof(Contact) * newcap);
+	if (!newbuf) {
+		puts("메모리 재할당 실패(메모리 부족)!!");
+		return 0;
+	}
+
+	contacts = newbuf;
+	capacity = newcap;  // 10 -> 20 -> 40 ...
+	return 1;
+}
+
+#pragma endregion
 #pragma endregion

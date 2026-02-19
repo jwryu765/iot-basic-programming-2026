@@ -1,4 +1,4 @@
-﻿﻿// 주소록 프로그램 step3
+﻿// 주소록 프로그램 step3
 
 #define _CRT_SECURE_NO_WARNINGS
 
